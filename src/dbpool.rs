@@ -71,6 +71,31 @@ impl DBPool{
 
             let mut oamp = POOL.clone();
             if let Some(ref mut amp) = oamp {
+                let pcm = if let Ok(ref mut pcm) = amp.lock(){
+                    pcm.clone()
+                } else {
+                    return Err(ModError::Connection(
+                        "Unable to get a lock on pool connection".to_string(),
+                    ));
+                };
+
+                let conn = pcm.acquire().await;
+                match conn {
+                    Ok(_conn) => {
+                        return Ok(_conn);
+                    },
+                    Err(_error) => {
+                        return Err(ModError::DB(_error));
+                    },
+                }
+            } else {
+                return Err(ModError::Connection(
+                    "No Pool Connection instantiated".to_string(),
+                ));
+            }
+
+            /*let mut oamp = POOL.clone();
+            if let Some(ref mut amp) = oamp {
                 if let Ok(ref mut pcm) = amp.lock() {
                     let conn = pcm.acquire().await;
                     match conn {
@@ -82,7 +107,7 @@ impl DBPool{
                 }
             } else {
                 return Err(ModError::Connection("No Pool Connection instantiated".to_string()));
-            }
+            }*/
         }
     }
 }
